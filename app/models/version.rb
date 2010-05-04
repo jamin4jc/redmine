@@ -25,7 +25,18 @@ class Version < ActiveRecord::Base
   validates_presence_of :name
   validates_uniqueness_of :name, :scope => [:project_id]
   validates_length_of :name, :maximum => 60
-  validates_format_of :effective_date, :with => /^\d{4}-\d{2}-\d{2}$/, :message => 'activerecord_error_not_a_date', :allow_nil => true
+  validates_format_of :effective_date_string, :with => /^\d{4}-\d{2}-\d{2}$/, :message => 'activerecord_error_not_a_date', :allow_nil => true
+
+  def effective_date_string
+    return @invalid_effective_date_string if @invalid_effective_date_string
+    effective_date.strftime("%Y-%m-%d") unless effective_date.nil?
+  end
+
+  def effective_date_string=(value)
+    self.effective_date = Date.parse(value)
+  rescue ArgumentError
+    @invalid_effective_date_string = value
+  end 
   
   def start_date
     effective_date
@@ -34,7 +45,7 @@ class Version < ActiveRecord::Base
   def due_date
     effective_date
   end
-  
+ 
   # Returns the total estimated time for this version
   def estimated_hours
     @estimated_hours ||= fixed_issues.sum(:estimated_hours).to_f
