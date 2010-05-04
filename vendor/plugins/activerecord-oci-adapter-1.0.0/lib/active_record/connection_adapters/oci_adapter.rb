@@ -130,7 +130,7 @@ begin
           {
             :primary_key => "NUMBER(38) NOT NULL PRIMARY KEY",
             :string      => { :name => "VARCHAR2", :limit => 255 },
-            :text        => { :name => "CLOB" },
+            :text        => { :name => "VARCHAR2", :limit => 4000 },
             :integer     => { :name => "NUMBER", :limit => 38 },
             :float       => { :name => "NUMBER" },
             :decimal     => { :name => "DECIMAL" },
