@@ -16,14 +16,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 class IssuesController < ApplicationController
-  menu_item :new_issue, :only => :new
+  menu_item :new_issue, :only => [:new, :create]
   default_search_scope :issues
   
   before_filter :find_issue, :only => [:show, :edit, :update, :reply]
   before_filter :find_issues, :only => [:bulk_edit, :move, :destroy]
   before_filter :find_project, :only => [:new, :create, :update_form, :preview, :auto_complete]
-  before_filter :authorize, :except => [:index, :changes, :gantt, :calendar, :preview, :context_menu]
-  before_filter :find_optional_project, :only => [:index, :changes, :gantt, :calendar]
+  before_filter :authorize, :except => [:index, :changes, :preview, :context_menu]
+  before_filter :find_optional_project, :only => [:index, :changes]
   before_filter :check_for_default_issue_status, :only => [:new, :create]
   before_filter :build_new_issue_from_params, :only => [:new, :create]
   accept_key_auth :index, :show, :changes
@@ -318,63 +318,6 @@ class IssuesController < ApplicationController
     end
   end
   
-  def gantt
-    @gantt = Redmine::Helpers::Gantt.new(params)
-    retrieve_query
-    @query.group_by = nil
-    if @query.valid?
-      events = []
-      # Issues that have start and due dates
-      events += @query.issues(:include => [:tracker, :assigned_to, :priority],
-                              :order => "start_date, due_date",
-                              :conditions => ["(((start_date>=? and start_date<=?) or (due_date>=? and due_date<=?) or (start_date<? and due_date>?)) and start_date is not null and due_date is not null)", @gantt.date_from, @gantt.date_to, @gantt.date_from, @gantt.date_to, @gantt.date_from, @gantt.date_to]
-                              )
-      # Issues that don't have a due date but that are assigned to a version with a date
-      events += @query.issues(:include => [:tracker, :assigned_to, :priority, :fixed_version],
-                              :order => "start_date, effective_date",
-                              :conditions => ["(((start_date>=? and start_date<=?) or (effective_date>=? and effective_date<=?) or (start_date<? and effective_date>?)) and start_date is not null and due_date is null and effective_date is not null)", @gantt.date_from, @gantt.date_to, @gantt.date_from, @gantt.date_to, @gantt.date_from, @gantt.date_to]
-                              )
-      # Versions
-      events += @query.versions(:conditions => ["effective_date BETWEEN ? AND ?", @gantt.date_from, @gantt.date_to])
-                                   
-      @gantt.events = events
-    end
-    
-    basename = (@project ? "#{@project.identifier}-" : '') + 'gantt'
-    
-    respond_to do |format|
-      format.html { render :template => "issues/gantt.rhtml", :layout => !request.xhr? }
-      format.png  { send_data(@gantt.to_image, :disposition => 'inline', :type => 'image/png', :filename => "#{basename}.png") } if @gantt.respond_to?('to_image')
-      format.pdf  { send_data(gantt_to_pdf(@gantt, @project), :type => 'application/pdf', :filename => "#{basename}.pdf") }
-    end
-  end
-  
-  def calendar
-    if params[:year] and params[:year].to_i > 1900
-      @year = params[:year].to_i
-      if params[:month] and params[:month].to_i > 0 and params[:month].to_i < 13
-        @month = params[:month].to_i
-      end    
-    end
-    @year ||= Date.today.year
-    @month ||= Date.today.month
-    
-    @calendar = Redmine::Helpers::Calendar.new(Date.civil(@year, @month, 1), current_language, :month)
-    retrieve_query
-    @query.group_by = nil
-    if @query.valid?
-      events = []
-      events += @query.issues(:include => [:tracker, :assigned_to, :priority],
-                              :conditions => ["((start_date BETWEEN ? AND ?) OR (due_date BETWEEN ? AND ?))", @calendar.startdt, @calendar.enddt, @calendar.startdt, @calendar.enddt]
-                              )
-      events += @query.versions(:conditions => ["effective_date BETWEEN ? AND ?", @calendar.startdt, @calendar.enddt])
-                                     
-      @calendar.events = events
-    end
-    
-    render :layout => false if request.xhr?
-  end
-  
   def context_menu
     @issues = Issue.find_all_by_id(params[:ids], :include => :project)
     if (@issues.size == 1)
@@ -476,56 +419,6 @@ private
     render_404
   end
   
-  def find_optional_project
-    @project = Project.find(params[:project_id]) unless params[:project_id].blank?
-    allowed = User.current.allowed_to?({:controller => params[:controller], :action => params[:action]}, @project, :global => true)
-    allowed ? true : deny_access
-  rescue ActiveRecord::RecordNotFound
-    render_404
-  end
-
-  # Retrieve query from session or build a new query
-  def retrieve_query
-    if !params[:query_id].blank?
-      cond = "project_id IS NULL"
-      cond << " OR project_id = #{@project.id}" if @project
-      @query = Query.find(params[:query_id], :conditions => cond)
-      @query.project = @project
-      session[:query] = {:id => @query.id, :project_id => @query.project_id}
-      sort_clear
-    else
-      if api_request? || params[:set_filter] || session[:query].nil? || session[:query][:project_id] != (@project ? @project.id : nil)
-        # Give it a name, required to be valid
-        @query = Query.new(:name => "_")
-        @query.project = @project
-        if params[:fields] and params[:fields].is_a? Array
-          params[:fields].each do |field|
-            @query.add_filter(field, params[:operators][field], params[:values][field])
-          end
-        else
-          @query.available_filters.keys.each do |field|
-            @query.add_short_filter(field, params[field]) if params[field]
-          end
-        end
-        @query.group_by = params[:group_by]
-        @query.column_names = params[:query] && params[:query][:column_names]
-        session[:query] = {:project_id => @query.project_id, :filters => @query.filters, :group_by => @query.group_by, :column_names => @query.column_names}
-      else
-        @query = Query.find_by_id(session[:query][:id]) if session[:query][:id]
-        @query ||= Query.new(:name => "_", :project => @project, :filters => session[:query][:filters], :group_by => session[:query][:group_by], :column_names => session[:query][:column_names])
-        @query.project = @project
-      end
-    end
-  end
-  
-  # Rescues an invalid query statement. Just in case...
-  def query_statement_invalid(exception)
-    logger.error "Query::StatementInvalid: #{exception.message}" if logger
-    session.delete(:query)
-    sort_clear
-    render_error "An error occurred while executing the query and has been logged. Please report this error to your Redmine administrator."
-  end
-
   # Used by #edit and #update to set some common instance variables
   # from the params
   # TODO: Refactor, not everything in here is needed by #edit
