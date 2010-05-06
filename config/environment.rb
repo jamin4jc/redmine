@@ -38,12 +38,6 @@ Rails::Initializer.run do |config|
   # config.active_record.observers = :cacher, :garbage_collector
   config.active_record.observers = :message_observer, :issue_observer, :journal_observer, :news_observer, :document_observer, :wiki_content_observer
 
-  ############################################
-  ########## R-SAM FIX #######################
-  config.active_record.partial_updates = false
-  ############################################
-  ############################################
-
   # Make Active Record use UTC-base instead of local time
   # config.active_record.default_timezone = :utc
   
