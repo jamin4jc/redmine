@@ -1,7 +1,7 @@
 class AddProjectToEnumerations < ActiveRecord::Migration
   def self.up
     add_column :enumerations, :project_id, :integer, :null => true, :default => nil
-    add_index :enumerations, :project_id
+    add_index :enumerations, :project_id, :name => 'enumerations_nx01' 
   end
 
   def self.down
