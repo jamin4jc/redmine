@@ -114,7 +114,7 @@ module CollectiveIdea #:nodoc:
         
         def left_and_rights_valid?
           count(
-            :joins => "LEFT OUTER JOIN #{quoted_table_name} AS parent ON " +
+            :joins => "LEFT OUTER JOIN #{quoted_table_name} parent ON " +
               "#{quoted_table_name}.#{quoted_parent_column_name} = parent.#{primary_key}",
             :conditions =>
               "#{quoted_table_name}.#{quoted_left_column_name} IS NULL OR " +
