@@ -1,6 +1,6 @@
 class AddMissingIndexesToCustomFieldsProjects < ActiveRecord::Migration
   def self.up
-    add_index :custom_fields_projects, [:custom_field_id, :project_id]
+    add_index :custom_fields_projects, [:custom_field_id, :project_id], :name => 'custom_projects_nx01'
   end
 
   def self.down

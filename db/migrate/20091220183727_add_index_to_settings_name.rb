@@ -1,6 +1,6 @@
 class AddIndexToSettingsName < ActiveRecord::Migration
   def self.up
-    add_index :settings, :name
+    add_index :settings, :name, :name => 'settings_nx02'
   end
 
   def self.down

@@ -1,7 +1,7 @@
 class AddMissingIndexesToWikiPages < ActiveRecord::Migration
   def self.up
-    add_index :wiki_pages, :wiki_id
-    add_index :wiki_pages, :parent_id
+    add_index :wiki_pages, :wiki_id,   :name => 'wiki_pages_nx01'
+    add_index :wiki_pages, :parent_id, :name => 'wiki_pages_nx02'
   end
 
   def self.down

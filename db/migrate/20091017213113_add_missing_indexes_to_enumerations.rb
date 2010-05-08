@@ -1,6 +1,6 @@
 class AddMissingIndexesToEnumerations < ActiveRecord::Migration
   def self.up
-    add_index :enumerations, [:id, :type]
+    add_index :enumerations, [:id, :type], :name => 'enumerations_nx02'
   end
 
   def self.down

@@ -1,6 +1,6 @@
 class AddMissingIndexesToWikiContents < ActiveRecord::Migration
   def self.up
-    add_index :wiki_contents, :author_id
+    add_index :wiki_contents, :author_id, :name => 'wiki_contents_nx01'
   end
 
   def self.down

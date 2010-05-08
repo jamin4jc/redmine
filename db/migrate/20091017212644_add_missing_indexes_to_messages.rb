@@ -1,7 +1,7 @@
 class AddMissingIndexesToMessages < ActiveRecord::Migration
   def self.up
-    add_index :messages, :last_reply_id
-    add_index :messages, :author_id
+    add_index :messages, :last_reply_id, :name => 'messages_nx01'
+    add_index :messages, :author_id,     :name => 'messages_nx02'
   end
 
   def self.down

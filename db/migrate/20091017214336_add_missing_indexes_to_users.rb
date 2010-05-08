@@ -1,7 +1,7 @@
 class AddMissingIndexesToUsers < ActiveRecord::Migration
   def self.up
-    add_index :users, [:id, :type]
-    add_index :users, :auth_source_id
+    add_index :users, [:id, :type],    :name => 'users_nx01'
+    add_index :users, :auth_source_id, :name => 'users_nx02'
   end
 
   def self.down

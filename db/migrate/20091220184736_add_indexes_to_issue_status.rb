@@ -1,8 +1,8 @@
 class AddIndexesToIssueStatus < ActiveRecord::Migration
   def self.up
-    add_index :issue_statuses, :position
-    add_index :issue_statuses, :is_closed
-    add_index :issue_statuses, :is_default
+    add_index :issue_statuses, :position,   :name => 'issue_statuses_nx01'
+    add_index :issue_statuses, :is_closed,  :name => 'issue_statuses_nx02'
+    add_index :issue_statuses, :is_default, :name => 'issue_statuses_nx03'
   end
 
   def self.down

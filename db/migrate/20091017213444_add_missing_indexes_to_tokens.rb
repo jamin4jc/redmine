@@ -1,6 +1,6 @@
 class AddMissingIndexesToTokens < ActiveRecord::Migration
   def self.up
-    add_index :tokens, :user_id
+    add_index :tokens, :user_id, :name => 'tokens_nx01'
   end
 
   def self.down
